@@ -8,6 +8,7 @@ const sequelize = new Sequelize(
     process.env.DB_PASSWORD,
     {
         host: process.env.DB_HOST,
+        port: process.env.DB_PORT, // <-- ADICIONADO: Passa a porta para o Sequelize
         dialect: process.env.DB_DIALECT,
         logging: false, // Desative o logging de SQL no console se preferir
     }

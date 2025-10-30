@@ -1,28 +1,32 @@
 {
   "name": "evolvinutri-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "API para o sistema Evolvi Nutri",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon app.js",
+    "start": "node app.js",
+    "db:init": "sequelize-cli init",
+    "db:migrate": "sequelize-cli db:migrate"
   },
   "keywords": [],
-  "author": "",
+  "author": "Patrick.Developer",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "axios": "^1.13.1",
+    "axios": "^1.7.2",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "openai": "^6.7.0",
-    "pg": "^8.16.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mercadopago": "^2.0.10",
+    "openai": "^4.52.2",
+    "pg": "^8.12.0",
     "pg-hstore": "^2.3.4",
-    "resend": "^6.3.0",
-    "sequelize": "^6.37.7"
+    "resend": "^3.4.0",
+    "sequelize": "^6.37.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
-    "sequelize-cli": "^6.6.3"
+    "nodemon": "^3.1.4",
+    "sequelize-cli": "^6.6.2"
   }
 }
