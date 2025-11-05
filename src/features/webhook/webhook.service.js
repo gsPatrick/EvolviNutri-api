@@ -144,13 +144,20 @@ class WebhookService {
             
             const ZAPI_URL = `https://api.z-api.io/instances/${process.env.ZAPI_INSTANCE_ID}/token/${process.env.ZAPI_TOKEN}/send-text`;
             
+            // CORREÇÃO: Adicionamos o 'headers' com o 'Client-Token' na requisição.
             await axios.post(ZAPI_URL, {
                 phone: formattedPhone,
                 message: message
+            }, {
+                headers: {
+                    'Client-Token': process.env.ZAPI_CLIENT_TOKEN
+                }
             });
+
             console.log("Mensagem enviada com sucesso via Z-API.");
 
         } catch (error) {
+            // Agora o log de erro será mais detalhado
             console.error("Erro na API da Z-API:", error.response ? error.response.data : error.message);
             throw new Error("Falha ao enviar mensagem via WhatsApp.");
         }
