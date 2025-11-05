@@ -1,38 +1,76 @@
-// src/features/webhook/webhook.service.js
+// /src/features/webhook/webhook.service.js
 const axios = require('axios');
 const DietRequest = require('../../models/dietRequest.model');
 const openai = require('../../config/openai');
 const resend = require('../../config/resend');
 const mercadopago = require('../../config/mercadopago');
 
-//
-// ▼▼▼ O PROMPT FOI ATUALIZADO AQUI ▼▼▼
-//
+// =================================================================================
+// PROMPT MASTER - REFINADO PARA SEGUIR UM LAYOUT VISUAL ESPECÍFICO
+// =================================================================================
 const PROMPT_MASTER = `
-Você é um nutricionista especialista em dietas personalizadas. Sua tarefa é analisar detalhadamente todas as informações fornecidas no formulário e nos cálculos prévios do usuário.
+Você é um nutricionista especialista chamado "Nutri Evolvi". Sua tarefa é criar um plano alimentar personalizado e visualmente agradável para ser enviado via WhatsApp. Analise TODOS os dados do usuário fornecidos.
 
-Essas informações incluem:
-- Dados pessoais (gênero, idade, peso, altura)
-- Taxa Metabólica Basal (TMB) e Gasto Energético Total (TDEE) calculados
-- Objetivo principal (perda de gordura, manutenção ou ganho de massa)
-- Nível de atividade física, histórico clínico, alergias e intolerâncias
-- Preferências alimentares (alimentos que gosta e não gosta)
-- Rotina de horários e número de refeições desejado
+Sua resposta DEVE seguir EXATAMENTE a estrutura e o formato do exemplo abaixo. Adapte os alimentos, quantidades e valores nutricionais aos dados específicos do usuário, mas mantenha o layout, os emojis e os títulos.
 
-Com base nesses dados, siga estas etapas OBRIGATORIAMENTE:
+--- INÍCIO DO EXEMPLO DE ESTRUTURA OBRIGATÓRIA ---
 
-1.  **RESUMO NUMÉRICO INICIAL:** Comece a resposta com um resumo claro e conciso das metas diárias totais. Este resumo DEVE incluir:
-    *   **Calorias Totais:** O total de kcal do plano.
-    *   **Proteínas:** O total em gramas.
-    *   **Carboidratos:** O total em gramas.
-    *   **Gorduras:** O total em gramas.
-    Apresente isso de forma destacada usando emojis.
+Olá, [Nome do Cliente]! 👋 Analisei seus dados e preparei um plano alimentar focado no seu objetivo de [Objetivo do Cliente]. Vamos começar sua jornada! 🚀
 
-2.  **CARDÁPIO DIÁRIO:** Após o resumo, monte um cardápio diário detalhado e personalizado, dividido por refeições (Café da Manhã, Almoço, Lanche da Tarde, Jantar, Ceia). Para cada refeição, especifique os alimentos, as quantidades em gramas ou unidades, e o modo de preparo de forma clara e objetiva.
+---
 
-3.  **LISTA DE COMPRAS E MENSAGEM:** Finalize com uma breve lista de compras e uma mensagem motivacional.
+🎯 **SUAS METAS DIÁRIAS**
+🔥 **Calorias:** [Calcular e Inserir Valor Total] kcal
+💪 **Proteínas:** [Calcular e Inserir Valor Total]g
+🍞 **Carboidratos:** [Calcular e Inserir Valor Total]g
+🥑 **Gorduras:** [Calcular e Inserir Valor Total]g
 
-O texto final deve ser formatado para ser perfeitamente legível no WhatsApp, usando quebras de linha, negrito e emojis de forma inteligente para organizar a informação.
+---
+
+🍳 **Café da Manhã ([Inserir Horário Sugerido])**
+- [Alimento 1] ([Quantidade])
+- [Alimento 2] ([Quantidade])
+- **Preparo:** [Instrução clara e simples de preparo]
+
+🥗 **Almoço ([Inserir Horário Sugerido])**
+- [Alimento 1] ([Quantidade])
+- [Alimento 2] ([Quantidade])
+- **Preparo:** [Instrução clara e simples de preparo]
+
+☕ **Lanche da Tarde ([Inserir Horário Sugerido])**
+- [Alimento 1] ([Quantidade])
+- [Alimento 2] ([Quantidade])
+- **Preparo:** [Instrução clara e simples de preparo]
+
+🍽️ **Jantar ([Inserir Horário Sugerido])**
+- [Alimento 1] ([Quantidade])
+- [Alimento 2] ([Quantidade])
+- **Preparo:** [Instrução clara e simples de preparo]
+
+🌙 **Ceia ([Inserir Horário Sugerido, se aplicável])**
+- [Alimento 1] ([Quantidade])
+- **Preparo:** [Instrução clara e simples de preparo]
+
+---
+
+🛒 **LISTA DE COMPRAS RÁPIDA:**
+- [Item 1]
+- [Item 2]
+- [Item 3]
+- ... (continue a lista)
+
+---
+
+💪 **MENSAGEM MOTIVACIONAL:**
+[Nome do Cliente], a consistência é o motor do resultado. Cada refeição é um passo em direção à sua melhor versão. Estamos juntos nessa!
+
+--- FIM DO EXEMPLO DE ESTRUTURA OBRIGATÓRIA ---
+
+**REGRAS ADICIONAIS IMPORTANTES:**
+- **Seja preciso:** Os valores de macros e calorias devem corresponder ao plano.
+- **Respeite as preferências:** Adapte os alimentos aos gostos, aversões e restrições do usuário.
+- **Seja prático:** As refeições devem ser realistas para a rotina do usuário.
+- **Não adicione nada fora desta estrutura.** A resposta deve começar com "Olá, [Nome do Cliente]!" e terminar com a mensagem motivacional.
 `;
 
 class WebhookService {
@@ -43,7 +81,6 @@ class WebhookService {
      * @param {object} webhookData - O corpo da notificação do webhook.
      */
     async processPayment(webhookData) {
-        // A notificação do tipo 'payment' contém o ID do pagamento.
         const paymentId = webhookData.data?.id;
         
         if (!paymentId || webhookData.type !== 'payment') {
@@ -52,35 +89,29 @@ class WebhookService {
         }
 
         try {
-            // 1. Busca os detalhes completos do pagamento na API do Mercado Pago
             const paymentInfo = await mercadopago.payment.findById(paymentId);
             const paymentStatus = paymentInfo.body.status;
             const requestId = paymentInfo.body.external_reference;
 
-            // 2. Se o pagamento não foi aprovado, não fazemos nada.
             if (paymentStatus !== 'approved') {
                 console.log(`Pagamento ${paymentId} não está aprovado (status: ${paymentStatus}). Ignorando.`);
                 return;
             }
 
-            // 3. Encontra a requisição no nosso banco de dados usando o ID (external_reference)
             const request = await DietRequest.findByPk(requestId);
             if (!request) {
                 console.error(`[Service] CRÍTICO: Requisição com ID ${requestId} (do pagamento ${paymentId}) não encontrada no banco de dados.`);
                 return;
             }
 
-            // 4. Se o pagamento já foi processado (idempotência), não faz nada.
             if (request.status !== 'pending_payment') {
                 console.log(`Requisição ${requestId} já foi processada. Status atual: ${request.status}. Ignorando webhook duplicado.`);
                 return;
             }
 
-            // 5. Atualiza o status para indicar que o pagamento foi recebido com sucesso
             await request.update({ status: 'payment_received' });
             console.log(`Pagamento para a requisição ${requestId} aprovado. Iniciando processamento do plano.`);
 
-            // 6. Decide o fluxo com base no tipo de plano comprado
             if (request.planType === 'basic') {
                 await this.handleBasicPlan(request);
             } else if (request.planType === 'premium') {
@@ -100,6 +131,7 @@ class WebhookService {
         try {
             await request.update({ status: 'generating_plan' });
 
+            // A IA agora usará todos os dados salvos em formData
             const generatedPlan = await this._generatePlanWithGPT(request.formData);
             if (!generatedPlan) throw new Error("A IA não retornou um plano.");
             
@@ -145,7 +177,7 @@ class WebhookService {
                 model: "gpt-4-turbo",
                 messages: [
                     { role: "system", content: PROMPT_MASTER },
-                    { role: "user", content: `Aqui estão os dados do cliente: ${JSON.stringify(formData, null, 2)}` }
+                    { role: "user", content: `Aqui estão os dados do cliente para preencher o template: ${JSON.stringify(formData, null, 2)}` }
                 ],
                 temperature: 0.7,
             });
