@@ -3,12 +3,36 @@ const axios = require('axios');
 const DietRequest = require('../../models/dietRequest.model');
 const openai = require('../../config/openai');
 const resend = require('../../config/resend');
-const mercadopago = require('../../config/mercadopago'); // <-- Importar MercadoPago para buscar o pagamento
+const mercadopago = require('../../config/mercadopago');
 
-// O "Prompt Mestre" que você definiu
+//
+// ▼▼▼ O PROMPT FOI ATUALIZADO AQUI ▼▼▼
+//
 const PROMPT_MASTER = `
-Analise detalhadamente todas as informações fornecidas no formulário e nos cálculos prévios do usuário. Essas informações incluem dados pessoais (genero, idade, peso, altura), composição corporal, taxa metabólica basal (TMB), gasto energético total (TDEE), objetivo principal (perda de gordura, manutenção ou ganho de massa), nível de atividade física, histórico clínico, alergias, intolerâncias, preferências alimentares, alimentos que gosta e não gosta, rotina de horários, número de refeições no dia e disponibilidade de tempo para preparo das refeições.
-Com base nesses dados, realize uma leitura interpretativa completa, considerando as particularidades individuais, e monte um cardápio diário detalhado e personalizado, dividido por refeições (Café da Manhã, Almoço, Lanche da Tarde, Jantar, Ceia). Para cada refeição, especifique os alimentos, as quantidades em gramas ou unidades, e o modo de preparo de forma clara e objetiva. O plano deve ser prático e alinhado ao orçamento e rotina do usuário. Finalize com uma breve lista de compras e uma mensagem motivacional. O texto deve ser formatado para ser facilmente legível no WhatsApp, use quebras de linha e emojis de forma inteligente.
+Você é um nutricionista especialista em dietas personalizadas. Sua tarefa é analisar detalhadamente todas as informações fornecidas no formulário e nos cálculos prévios do usuário.
+
+Essas informações incluem:
+- Dados pessoais (gênero, idade, peso, altura)
+- Taxa Metabólica Basal (TMB) e Gasto Energético Total (TDEE) calculados
+- Objetivo principal (perda de gordura, manutenção ou ganho de massa)
+- Nível de atividade física, histórico clínico, alergias e intolerâncias
+- Preferências alimentares (alimentos que gosta e não gosta)
+- Rotina de horários e número de refeições desejado
+
+Com base nesses dados, siga estas etapas OBRIGATORIAMENTE:
+
+1.  **RESUMO NUMÉRICO INICIAL:** Comece a resposta com um resumo claro e conciso das metas diárias totais. Este resumo DEVE incluir:
+    *   **Calorias Totais:** O total de kcal do plano.
+    *   **Proteínas:** O total em gramas.
+    *   **Carboidratos:** O total em gramas.
+    *   **Gorduras:** O total em gramas.
+    Apresente isso de forma destacada usando emojis.
+
+2.  **CARDÁPIO DIÁRIO:** Após o resumo, monte um cardápio diário detalhado e personalizado, dividido por refeições (Café da Manhã, Almoço, Lanche da Tarde, Jantar, Ceia). Para cada refeição, especifique os alimentos, as quantidades em gramas ou unidades, e o modo de preparo de forma clara e objetiva.
+
+3.  **LISTA DE COMPRAS E MENSAGEM:** Finalize com uma breve lista de compras e uma mensagem motivacional.
+
+O texto final deve ser formatado para ser perfeitamente legível no WhatsApp, usando quebras de linha, negrito e emojis de forma inteligente para organizar a informação.
 `;
 
 class WebhookService {
@@ -65,7 +89,6 @@ class WebhookService {
 
         } catch (error) {
             console.error(`[Service] Falha grave ao processar o webhook para o pagamento ${paymentId}:`, error.message);
-            // Opcional: Aqui você poderia enviar uma notificação para um canal de alerta (Slack, etc.)
         }
     }
 
@@ -144,7 +167,6 @@ class WebhookService {
             
             const ZAPI_URL = `https://api.z-api.io/instances/${process.env.ZAPI_INSTANCE_ID}/token/${process.env.ZAPI_TOKEN}/send-text`;
             
-            // CORREÇÃO: Adicionamos o 'headers' com o 'Client-Token' na requisição.
             await axios.post(ZAPI_URL, {
                 phone: formattedPhone,
                 message: message
@@ -157,7 +179,6 @@ class WebhookService {
             console.log("Mensagem enviada com sucesso via Z-API.");
 
         } catch (error) {
-            // Agora o log de erro será mais detalhado
             console.error("Erro na API da Z-API:", error.response ? error.response.data : error.message);
             throw new Error("Falha ao enviar mensagem via WhatsApp.");
         }
