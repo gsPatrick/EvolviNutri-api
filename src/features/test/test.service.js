@@ -8,7 +8,7 @@ class TestService {
      * Orquestra o envio de uma mensagem de teste completa com dados detalhados.
      */
     async sendTestWhatsApp() {
-        const targetPhoneNumber = '71982862912';
+        const targetPhoneNumber = '13981086937';
 
         // =================================================================================
         // DADOS SIMULADOS - ATUALIZADOS COM TODAS AS RESPOSTAS DO NOVO FORMULÁRIO
